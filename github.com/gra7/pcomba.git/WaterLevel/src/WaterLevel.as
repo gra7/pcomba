@@ -1,162 +1,236 @@
-/**
- * Copyright nabe ( http://wonderfl.net/user/nabe )
- * MIT License ( http://www.opensource.org/licenses/mit-license.php )
- * Downloaded from: http://wonderfl.net/c/9eE0
- */
-
-package {
-	import flash.display.BlendMode;
+package  {
+	import com.adobe.utils.AGALMiniAssembler;
+	
 	import flash.display.Sprite;
+	import flash.display3D.Context3D;
+	import flash.display3D.Context3DProgramType;
+	import flash.display3D.Context3DVertexBufferFormat;
+	import flash.display3D.IndexBuffer3D;
+	import flash.display3D.Program3D;
+	import flash.display3D.VertexBuffer3D;
 	import flash.events.Event;
-	import flash.events.MouseEvent;
-	import flash.filters.ColorMatrixFilter;
+	import flash.geom.Matrix3D;
+	import flash.geom.Rectangle;
+	import flash.utils.ByteArray;
 	
-	[SWF( width="800",height="640",frameRate="60",backgroundColor="0xEEEDE3" )]
+	import utils.Coordinates;
+	import utils.SimplePoint;
 	
-
+	import water.Water;
+	
+	/**
+	 * In this practice we simply draw a simple triangle using only
+	 * Stage3D API and nothing more.
+	 * You should be able to write this class on your own before
+	 * going any further.
+	 * 
+	 * Find the associate tutorial at my blog on http://blog.norbz.net/
+	 * @see http://blog.norbz.net/2012/01/stage3d-agal-from-scratch-part-iii-hello-triangle
+	 * 
+	 * 
+	 * @author Nicolas CHESNE
+	 * 			http://blog.norbz.net
+	 * 			http://www.norbz.fr
+	 */
+	[SWF(backgroundColor="#FFFFFF", frameRate="31", width="800", height="600")];
 	public class WaterLevel extends Sprite {
-		private var cursor_i:MyMask;
-		private var cursor_r:MyMask;
-		public function WaterLevel():void {
-			addEventListener(Event.ADDED_TO_STAGE, init);
+		
+		// simple width and height quick accessors
+		private var W:int;
+		private var H:int;
+		
+		// Stage3D related members
+		private var context:Context3D;
+		private var program:Program3D;
+		private var vertexBuffer:VertexBuffer3D;
+		private var indexBuffer:IndexBuffer3D;
+		private var m:Matrix3D;
+		private var vertexShader:ByteArray;
+		private var fragmentShader:ByteArray;
+		private var _water:Water
+		
+		/**
+		 * CLASS CONSTRUCTOR
+		 */
+		public function WaterLevel() {
+			// Init the practive when the stage is available
+			if (stage) __init();
+			else addEventListener(Event.ADDED_TO_STAGE, __init);
 		}
-		private function init (e:Event):void {
-			removeEventListener(Event.ADDED_TO_STAGE, init);
-			var water_:Sprite = new MyWater(stage, 100);
-			water_.blendMode = BlendMode.SUBTRACT;
-			water_.y = 320;
-
-			cursor_i = new_cursor(water_, false);
-			cursor_r = new_cursor(water_, true);
-
-			addChild(cursor_i);
-			addChild(water_);
-			addChild(cursor_r);
-
-			addEventListener(MouseEvent.MOUSE_MOVE, update);
-			update(null);
-		}
-		private function update (e:Event):void {
-			cursor_i.x = mouseX;
-			const h_:int = 640;
-			cursor_i.y = h_ + (mouseY - h_) * 0.4;
-			cursor_i.refresh();
-			cursor_r.x = mouseX;
-			cursor_r.y = mouseY;
-			cursor_r.refresh();
-		}
-		private function new_cursor (water_:Sprite, real_:Boolean):MyMask {
-			var original_:Sprite = new MyTorus(300);
-			original_.filters = [new ColorMatrixFilter([
-				0, 0, 0.25, 0, 0xD0,
-				0, 0, 0, 0, 0x70,
-				0, 0, 0, 0, 0x70,
-				0, 0, 0, 1, 0
-			])];
-			original_.cacheAsBitmap = true;
+		
+		/**
+		 * Initialise the practice by requesting a Context3D to the first Stage3D
+		 * Remember than when working with Stage3D you are actually working with Context3D
+		 */
+		private function __init(event:Event = null):void {
+			removeEventListener(Event.ADDED_TO_STAGE, __init);
 			
-			var map_:Sprite = new MyTorus(300);
-			map_.filters = [new ColorMatrixFilter([
-				0, 0, 0, 0, 0,
-				0, 0, 0, 0, 0,
-				0, 0, 0.1, 0, 0x10,
-				0, 0, 0, 1, 0
-			])];
-			map_.cacheAsBitmap = true;
-
-			if (! real_) map_.scaleY = 0.4;
-			return new MyMask(original_.getBounds(original_), original_, map_, water_, real_);
+			Coordinates.width=stage.stageWidth;
+			Coordinates.height=stage.stageHeight;
+			
+			W = stage.stageWidth;
+			H = stage.stageHeight;
+			
+			// wait for Stage3D to provide us a Context3D
+			stage.stage3Ds[0].addEventListener(Event.CONTEXT3D_CREATE, __onCreate);
+			stage.stage3Ds[0].requestContext3D();
+			
+			
+			
+			
+			
 		}
-	}
-}
-
-import flash.display.Bitmap;
-import flash.display.BitmapData;
-import flash.display.BitmapDataChannel;
-import flash.display.BlendMode;
-import flash.display.DisplayObject;
-import flash.display.GradientType;
-import flash.display.Graphics;
-import flash.display.Sprite;
-import flash.display.Stage;
-import flash.geom.Matrix;
-import flash.geom.Point;
-import flash.geom.Rectangle;
-
-
-class MyWater extends Sprite {
+		
+		/**
+		 * Called when the context3D has been created
+		 * 
+		 * Put the whole scene in place for the GPU.
+		 * As you can see, I chose to first deal with the whole Allocation thing
+		 * before dealin with the upload things, but I could have first create buffers and upload them
+		 * before doing the same for the program.
+		 */
+		private function __onCreate(event:Event):void {
+			// // // CREATE CONTEXT // //
+			context = stage.stage3Ds[0].context3D;
+			_water=new Water();
+			_water.splash(8,5);
+			_water.update()
+			
+			// By enabling the Error reporting, you can get some valuable information about errors in your shaders
+			// But it also dramatically slows down your program.
+			// context.enableErrorChecking=true;
+			
+			// Configure the back buffer, in width and height. You can also specify the antialiasing
+			// The backbuffer is the memory space where your final image is rendered.
+			//context.enableDepthAndStencil=true;
+			context.configureBackBuffer(W, H,4,false);
+			
+			
+			// Allocation - program compilation
+			__createBuffers();
+			__createAndCompileProgram();
+			
+			// Upload program and buffers data
+			__uploadProgram();
+			__uploadBuffers();
+			
+			// Split chunk of data and set active program
+			__splitAndMakeChunkOfDataAvailableToProgram();
+			__setActiveProgram();
+			
+			// start the rendering loop
+			addEventListener(Event.ENTER_FRAME, render);
+		}
+		
+		/**
+		 * Create the vertex and index buffers
+		 */
+		private function __createBuffers():void {
+			// // // CREATE BUFFERS // //
+			//vertexBuffer = context.createVertexBuffer(4, 6);
+			//indexBuffer = context.createIndexBuffer(6);
+		}
+		
+		/**
+		 * Upload some data to the vertex and index buffers
+		 */
+		private function __uploadBuffers():void {
+			
+		
+			
+				
+			var plane:Plane=new Plane(2,1,200);			
+		    plane.buildGeometry();			
+			vertexBuffer=context.createVertexBuffer(plane.numVertices,9);
+			vertexBuffer.uploadFromVector(plane.vertexData,0,plane.numVertices);
+			indexBuffer=context.createIndexBuffer(plane.numIndices);
+			indexBuffer.uploadFromVector(plane.indices,0,plane.numIndices);
 	
-
-	public function MyWater(stage:Stage, height:int):void {
-		var m_:Matrix = new Matrix;
-		m_.createGradientBox(100, height, Math.PI * 0.5);
-		var g_:Graphics = graphics;
-		g_.beginGradientFill(GradientType.LINEAR, [0, 0xFF], null, null, m_);
-		g_.drawRect(0, 0, stage.stageWidth, stage.stageHeight);
-		g_.endFill();
-	}
-}
-class MyTorus extends Sprite {
-	[Embed(source="pike.png")]
-	private var pike:Class;
-	public function MyTorus(radius:int):void {
-		var pikea:Bitmap=new pike() as Bitmap
-		addChild(pikea);
-	//	var m_:Matrix = new Matrix;
-		//m_.createGradientBox(radius * 2, radius * 2, 0, -radius, -radius);
-	//	var g_:Graphics = graphics;
-	//	g_.beginGradientFill(GradientType.RADIAL,
-	//		[1, 0x40, 0x80, 0xC0, 0xFF, 0xC0, 0x80, 0x40, 1],
-	//		[0, 1, 1, 1, 1, 1, 1, 1, 1],
-	//		[0x80, 0x84, 0x8F, 0xA0, 0xC0, 0xE0, 0xF0, 0xFC, 0xFF], m_);
-	//	g_.drawCircle(0, 0, radius);
-	//	g_.endFill();
 		
-		
-	}
-}
-class MyMask extends Sprite {
-	private var rect_:Rectangle;
-	private var original_:Sprite;
-	private var map_:Sprite;
-	private var water_:Sprite;
-	private var work_:BitmapData;
-	private var bd_:BitmapData;
-	private var m_:Matrix = new Matrix;
-	private var o_:Point = new Point;
-	private var real_:Boolean;
-	public function MyMask(rect:Rectangle, original:Sprite, map:Sprite, water:Sprite, real_arg:Boolean):void {
-		rect_ = rect;
-		m_.createBox(1, 1, 0, -rect_.left, -rect_.top);
-		original_ = original;
-		map_ = map;
-		water_ = water;
-		work_ = new BitmapData(rect_.width, rect_.height, false);
-		bd_ = new BitmapData(rect_.width, rect_.height, true);
-		var b_:Bitmap = new Bitmap(bd_);
-		b_.x = rect_.left;
-		b_.y = rect_.top;
-		addChild(b_);
-		real_ = real_arg;
-	}
-	public function refresh():void {
-		var i_:Matrix = m_.clone();
-		if (!real_) i_.scale(1, map_.scaleY);
-		var w_:Matrix = m_.clone();
-		w_.translate(water_.x - x, water_.y - y + (real_ ? 0 : -0));
-		work_.fillRect(work_.rect, 0);
-		if (real_) {
-			work_.draw(map_, i_);
-			work_.draw(water_, w_, null, BlendMode.SUBTRACT);
-		} else {
-			work_.draw(water_, w_);
-			work_.draw(map_, i_, null, BlendMode.SUBTRACT);
+				
+				
+			
 		}
-
-		bd_.lock();
-		bd_.fillRect(bd_.rect, 0);
-		bd_.draw(original_, i_);
-		bd_.threshold(work_, work_.rect, o_, "<", 1, 0, 0xFF);
-		bd_.unlock();
+		
+		
+		
+		
+		
+	
+		
+		
+		
+		
+		
+		
+		/**
+		 * Define how each Chunck of Data should be split and upload to fast access register for our AGAL program
+		 * 
+		 * @see __createAndCompileProgram
+		 */
+		private function __splitAndMakeChunkOfDataAvailableToProgram():void {
+			// So here, basically, your telling your GPU that for each Vertex with a vertex being x,y,y,r,g,b
+			// you will copy in register "0", from the buffer "vertexBuffer, starting from the postion "0" the FLOAT_3 next number
+			context.setVertexBufferAt(0, vertexBuffer, 0, Context3DVertexBufferFormat.FLOAT_3); // register "0" now contains x,y,z
+			trace(Context3DVertexBufferFormat.FLOAT_3)
+			// Here, you will copy in register "1" from "vertexBuffer", starting from index "3", the next FLOAT_3 numbers
+			context.setVertexBufferAt(1, vertexBuffer, 3, Context3DVertexBufferFormat.FLOAT_3); // register 1 now contains r,g,b
+		}
+		
+		/**
+		 * Create the program that will run in your GPU.
+		 */
+		private function __createAndCompileProgram() : void {
+			// // // CREATE SHADER PROGRAM // //
+			// When you call the createProgram method you are actually allocating some V-Ram space
+			// for your shader program.
+			program = context.createProgram();
+			
+			// Create an AGALMiniAssembler.
+			// The MiniAssembler is an Adobe tool that uses a simple
+			// Assembly-like language to write and compile your shader into bytecode
+			var assembler:AGALMiniAssembler = new AGALMiniAssembler();
+			
+			// VERTEX SHADER
+			var code:String = "";
+			code += "mov op, va0\n"; // Move the Vertex Attribute 0 (va0), which is our Vertex Coordinate, to the Output Point
+			code += "mov v0, va1\n"; // Move the Vertex Attribute 1 (va1), which is our Vertex Color, to the variable register v0
+			// Variable register are memory space shared between your Vertex Shader and your Fragment Shader
+			
+			// Compile our AGAL Code into ByteCode using the MiniAssembler 
+			vertexShader = assembler.assemble(Context3DProgramType.VERTEX, code);
+			
+			code = "mov oc, v0\n"; // Move the Variable register 0 (v0) where we copied our Vertex Color, to the output color
+			
+			// Compile our AGAL Code into Bytecode using the MiniAssembler
+			fragmentShader = assembler.assemble(Context3DProgramType.FRAGMENT, code);
+		}
+		
+		/**
+		 * Upload our two compiled shaders into the graphic card.
+		 */
+		private function __uploadProgram():void {
+			// UPLOAD TO GPU PROGRAM
+			program.upload(vertexShader, fragmentShader); // Upload the combined program to the video Ram
+		}
+		
+		/**
+		 * Define the active program to run on our GPU
+		 */
+		private function __setActiveProgram():void {
+			// Set our program as the current active one
+			context.setProgram(program);
+		}
+		
+		/**
+		 * Called each frame
+		 * Render the scene
+		 */
+		private function render(event:Event):void {
+		_water.update()
+			context.clear(1, 1, 1, 1); // Clear the backbuffer by filling it with the given color			
+			context.drawTriangles(indexBuffer); // Draw the triangle according to the indexBuffer instructions into the backbuffer
+			context.present(); // render the backbuffer on screen.
+		}
 	}
 }
