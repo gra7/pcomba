@@ -17,6 +17,7 @@ package  {
 	import utils.SimplePoint;
 	
 	import water.Water;
+	import water.testrock.RockView;
 	
 	/**
 	 * In this practice we simply draw a simple triangle using only
@@ -139,13 +140,21 @@ package  {
 		
 			
 				
-			var plane:Plane=new Plane(2,1,200);			
-		    plane.buildGeometry();			
-			vertexBuffer=context.createVertexBuffer(plane.numVertices,9);
-			vertexBuffer.uploadFromVector(plane.vertexData,0,plane.numVertices);
-			indexBuffer=context.createIndexBuffer(plane.numIndices);
-			indexBuffer.uploadFromVector(plane.indices,0,plane.numIndices);
-	
+			//var plane:Plane=new Plane(2,1,200);			
+		  //  plane.buildGeometry();	
+			
+			
+			//vertexBuffer=context.createVertexBuffer(plane.numVertices,9);
+			//vertexBuffer.uploadFromVector(plane.vertexData,0,plane.numVertices);
+			//indexBuffer=context.createIndexBuffer(plane.numIndices);
+			//indexBuffer.uploadFromVector(plane.indices,0,plane.numIndices);
+			
+			var rock:RockView=new RockView();
+			rock.buildGeometry();
+			vertexBuffer=context.createVertexBuffer(rock.numVertices,9);
+			vertexBuffer.uploadFromVector(rock.vertexData,0,rock.numVertices);
+			indexBuffer=context.createIndexBuffer(rock.numIndices);
+			indexBuffer.uploadFromVector(rock.indices,0,rock.numIndices);
 		
 				
 				

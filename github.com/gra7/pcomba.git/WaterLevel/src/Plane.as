@@ -114,10 +114,10 @@ package
 					//vertex Color blue
 					_vertexData[index++] = Math.random();
 					
-					// vertex Z
+					// vertex alpha
 					_vertexData[index++] = 0;
 					
-					//vertex Direction
+					//UV
 					if (_yUp) {
 						_vertexData[index++] = 1;
 						_vertexData[index++] = 0;
@@ -178,37 +178,7 @@ package
 		}
 		
 		
-		
-		private function updateIndexData(indices:Vector.<uint>):void
-		{
-			_indices = indices;
-			_numIndices = indices.length;
-			
-			var numTriangles:int = _numIndices/3;
-		//	if (_numTriangles != numTriangles)
-			//	disposeIndexBuffers(_indexBuffer);
-			//_numTriangles = numTriangles;
-			//invalidateBuffers(_indicesInvalid);
-			//_faceNormalsDirty = true;
-			
-			//if (_autoDeriveVertexNormals)
-				//_vertexNormalsDirty = true;
-			//if (_autoDeriveVertexTangents)
-				//_vertexTangentsDirty = true;
-		}
-		
-		/*protected function disposeIndexBuffers(buffers:Vector.<IndexBuffer3D>):void
-		{
-		for (var i:int = 0; i < 8; ++i) {
-		if (buffers[i]) {
-		buffers[i].dispose();
-		buffers[i] = null;
-		}
-		}
-		}*/
-		
-		
-		
+
 		
 		
 	}

@@ -8,6 +8,16 @@ package utils
 		private static var _halfWidth:int;
 		private static var _halfHeight:int;
 		
+		public static function get halfHeight():int
+		{
+			return _halfHeight;
+		}
+
+		public static function get halfWidth():int
+		{
+			return _halfWidth;
+		}
+
 		public static function get height():int
 		{
 			return _height;
