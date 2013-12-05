@@ -28,11 +28,11 @@ package water.testrock
 		}
 
 		public function update():void{
-			if (_position.y > water.GetHeight(_position.x))
-			{
-				_velocity.mulSelf(new Vec2(0,WaterConstants.ROCK_VELOCITY));
+			//if (_position.y > water.GetHeight(_position.x))
+			//{
+			//	_velocity.mulSelf(new Vec2(0,WaterConstants.ROCK_VELOCITY));
 				
-			}
+			//}
 			
 			_position.addSelf(_velocity);
 			_velocity.addSelf(GRAVITY);

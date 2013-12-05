@@ -8,16 +8,38 @@ package utils
 		private static var _halfWidth:int;
 		private static var _halfHeight:int;
 		
+		
+		private static var _miterInPixel:Number;
+		
+		
+		private static var _sceneHeight:Number
+		
+		public static function get miterInPixel():Number
+		{
+			return _miterInPixel;
+		}
+		
+		public static function set sceneHeight(value:Number):void
+		{
+			_sceneHeight = value;
+			_miterInPixel=value/_height;
+		}
+		
+		public static function get sceneHeight():Number
+		{
+			return _sceneHeight;
+		}
+		
 		public static function get halfHeight():int
 		{
 			return _halfHeight;
 		}
-
+		
 		public static function get halfWidth():int
 		{
 			return _halfWidth;
 		}
-
+		
 		public static function get height():int
 		{
 			return _height;
@@ -56,7 +78,7 @@ package utils
 			}else if(x>_halfWidth){
 				x=(x-_halfWidth)/_halfWidth;
 			}else{
-			x=0
+				x=0
 			}
 			
 			if(y<_halfHeight){
@@ -64,7 +86,7 @@ package utils
 			}else if(y>_halfHeight){
 				y=-(y-_halfHeight)/_halfHeight;			
 			}else{
-			y=0;
+				y=0;
 			}
 			
 			return new SimplePoint(x,y);
